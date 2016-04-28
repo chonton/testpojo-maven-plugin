@@ -4,8 +4,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 
-import org.apache.maven.plugin.logging.Log;
-
 import com.google.common.collect.ImmutableMap;
 
 import lombok.SneakyThrows;
@@ -15,14 +13,12 @@ import lombok.SneakyThrows;
  */
 public class Builder {
 
-    private Log log;
     private Method publicStaticBuilderMethod;
     private Method publicBuildMethod;
     private Method publicToBuilderMethod;
     private Object builder;
 
-    public Builder(Log log, Class<?> dtoClass) {
-        this.log = log;
+    public Builder(Class<?> dtoClass) {
         if (findBuilderMethod(dtoClass)) {
             findInstanceBuilder(dtoClass);
         }
@@ -34,6 +30,7 @@ public class Builder {
             return false;
         }
         builder = (publicToBuilderMethod != null ? publicToBuilderMethod : publicStaticBuilderMethod).invoke(dto);
+        builder.toString();
         return true;
     }
 
@@ -70,6 +67,9 @@ public class Builder {
                     && mth.getParameterTypes().length == 1) {
                 Class<?> parameterClass = mth.getParameterTypes()[0];
                 if (parameterClass.isPrimitive()) {
+                    if(value==null) {
+                        continue;
+                    }
                     parameterClass = PRIMATIVE_TO_WRAPPER.get(parameterClass);
                 }
                 if (parameterClass.isAssignableFrom(value.getClass())) {
@@ -77,7 +77,7 @@ public class Builder {
                         mth.invoke(builder, value);
                         return;
                     } catch (Exception e) {
-                        log.error("builder method " + name, e);
+                        System.err.println("builder method " + name + ": " + e.getMessage());
                     }
                 }
             }

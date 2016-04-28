@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.maven.plugin.logging.Log;
 import org.reflections.adapters.MetadataAdapter;
 import org.reflections.scanners.AbstractScanner;
 
@@ -17,7 +16,6 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class PojoScanner extends AbstractScanner {
-    final private Log log;
     final private Collection<String> collector;
 
     @SuppressWarnings("unchecked")

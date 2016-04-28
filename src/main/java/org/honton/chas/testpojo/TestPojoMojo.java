@@ -1,14 +1,19 @@
 package org.honton.chas.testpojo;
 
 import java.io.File;
-import java.net.MalformedURLException;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -16,136 +21,83 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.reflections.ReflectionUtils;
-import org.reflections.Reflections;
-import org.reflections.util.ConfigurationBuilder;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.github.benas.randombeans.EnhancedRandomBuilder;
-import io.github.benas.randombeans.api.EnhancedRandom;
-import lombok.SneakyThrows;
 
 /**
  * test pojo setters, getters, equals, hashCode
  */
 @Mojo(name = "test", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class TestPojoMojo extends AbstractMojo {
-    
+
     @Parameter(property = "project.runtimeClasspathElements", readonly = true)
     private List<String> runtimeScope;
-    
+
     @Parameter(property = "project.compileClasspathElements", readonly = true)
     private List<String> compileScope;
-    
+
     @Parameter(property = "project.build.outputDirectory", readonly = true)
     private String outputDirectory;
 
+    @Parameter(property = "project.build.directory", readonly = true)
+    private String buildDirectory;
+
+    @Parameter(property = "project.model.properties", readonly = true)
+    private Map<String, String> properties;
+
     @Override
     public void execute() throws MojoExecutionException {
-        int errors = testPojos();
-        if(errors>0) {
-            throw new MojoExecutionException(errors + " pojos had errors");
+        String argLine = properties.get("argLine");
+        if (argLine == null) {
+            getLog().warn("No argLine specifying javaagent - not continuing");
+            return;
         }
-    }
+        argLine = replaceProperties(argLine);
 
-    
-    @SafeVarargs
-    private final URL[] getUrls(String classes, List<String>... scopes) {
-        Set<URL> urls = new HashSet<>();
-        addUrl(urls, classes);
-        for(List<String> elements : scopes) {
-            addScope(urls, elements);
-        }
-        return urls.toArray(new URL[urls.size()]);
-    }
-
-    private void addScope(Set<URL> urls, List<String> elements) {
-        for (String element : elements) {
-            addUrl(urls, element);
-        }
-    }
-
-    private void addUrl(Set<URL> urls, String element) {
         try {
-            urls.add(new File(element).toURI().toURL());
-        } catch (MalformedURLException e) {
-            getLog().info(element + " not a valid location");
+            File jarFileLocation = new File(buildDirectory, "testPojo.jar");
+            Set<String> dependencies = new HashSet<>();
+            dependencies.addAll(runtimeScope);
+            dependencies.addAll(compileScope);
+            addMyDependencies(dependencies);
+            
+            new BuildExecJar(argLine, jarFileLocation, Main.class.getCanonicalName())
+                .buildJar(dependencies);
+
+            JavaProcess proc = new JavaProcess(getLog());
+            proc.setJavaArgs(Arrays.asList(argLine, "-jar", jarFileLocation.getAbsolutePath()));
+            proc.setCmdArgs(Arrays.asList(outputDirectory));
+
+            int errors = proc.execute();
+            if (errors > 0) {
+                throw new MojoExecutionException(errors + " pojos had errors");
+            }
+        } catch (ExecutionException | IOException | TimeoutException | URISyntaxException ex) {
+            throw new MojoExecutionException(ex.getMessage(), ex);
         }
     }
 
-    private List<String> getPojoNames() {
-        final List<String> collector = new ArrayList<>();
-        new Reflections(new ConfigurationBuilder()
-                .setUrls(getUrls(outputDirectory))
-                .setScanners(new PojoScanner(getLog(), collector)));
-        return collector;
-    }
-    
-    private ClassLoader createClassLoader() {
-        return new URLClassLoader(getUrls(outputDirectory, compileScope, runtimeScope), 
-                Thread.currentThread().getContextClassLoader());
+    private void addMyDependencies(Set<String> dependencies) throws URISyntaxException {
+        URLClassLoader ucl = (URLClassLoader) getClass().getClassLoader();
+        for(URL url : ucl.getURLs()) {
+            dependencies.add(url.toURI().getPath());
+        }
     }
 
-    private List<Class<?>> getPojoClasses() {
-        return ReflectionUtils.forNames(getPojoNames(), createClassLoader() );
-    }
+    private final static Pattern ARG_PATTERN = Pattern.compile("@\\{([^}]+)\\}");
 
-    public int testPojos() {
-        EnhancedRandom randomBuilder = EnhancedRandomBuilder.aNewEnhancedRandomBuilder().build();
-        int errors = 0;
-        for (Class<?> dtoClass : getPojoClasses() ) {
-            getLog().info("testing " + dtoClass.getCanonicalName());
-            try {
-                testPojoInstance(dtoClass, dtoClass.newInstance());
-                testPojoInstance(dtoClass, randomBuilder.nextObject(dtoClass));
-            } catch (Exception ex) {
-                ++errors;
-                getLog().error(dtoClass.getCanonicalName(), ex);
+    private String replaceProperties(String argLine) {
+        StringBuilder sb = new StringBuilder();
+        int start = 0;
+        for (Matcher m = ARG_PATTERN.matcher(argLine); m.find();) {
+            String value = properties.get(m.group(1));
+            if (value != null) {
+                sb.append(argLine.substring(start, m.start()));
+                sb.append(value);
+                start = m.end();
             }
         }
-        return errors;
-    }
-
-    private boolean testPojoInstance(Class<?> dtoClass, Object dto) {
-        dto.toString();
-        return testPojoToMapToPojo(dtoClass, dto)  && testPojoToBuilderToPojo(dtoClass, dto);
-    }
-
-    @SneakyThrows
-    private boolean testPojoToBuilderToPojo(Class<?> dtoClass, Object dto) {
-        Builder helper = new Builder(getLog(), dtoClass);
-        if (!helper.createBuilder(dto)) {
-            return true;
+        if (start != 0) {
+            return sb.append(argLine.substring(start)).toString();
         }
-        if (!helper.isInstanceBuilder()) {
-            Map<String, Object> map = OBJECT_MAPPER.convertValue(dto, MAP_STRING_TO_OBJECT_TYPE);
-            helper.setBuilderValues(map);
-        }
-        return comparePojos(dto, helper.build());
+        return argLine;
     }
-
-    static private final TypeReference<Map<String, Object>> MAP_STRING_TO_OBJECT_TYPE = new TypeReference<Map<String, Object>>() {
-    };
-    static private final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    private boolean testPojoToMapToPojo(Class<?> dtoClass, Object dto) {
-        Map<String, Object> map = OBJECT_MAPPER.convertValue(dto, MAP_STRING_TO_OBJECT_TYPE);
-        Object copy = OBJECT_MAPPER.convertValue(map, dtoClass);
-        return comparePojos(dto, copy);
-    }
-
-    private boolean comparePojos(Object dto, Object copy) {
-        if(!dto.equals(copy)) {
-            getLog().error(dto + " != " + copy);
-            return false;
-        }
-        if(dto.hashCode() != copy.hashCode()) {
-            getLog().error(dto.hashCode() + " != " + copy.hashCode());
-            return false;
-        }
-        return true;
-    }
-
 }
