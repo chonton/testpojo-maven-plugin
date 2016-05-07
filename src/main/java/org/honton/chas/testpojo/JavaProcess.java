@@ -38,8 +38,10 @@ public class JavaProcess {
     /**
      * Start the process and wait for response.
      * pump the stdout and stderr streams from launched process.
+     * @return The process exit status
+     * @throws Exception upon launch failures 
      */
-    public int execute() throws ExecutionException, IOException, TimeoutException {
+    public int execute() throws Exception {
         // buildJar();
         executor = Executors.newFixedThreadPool(2);
         try {

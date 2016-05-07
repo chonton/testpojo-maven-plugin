@@ -26,7 +26,7 @@ public class Main {
      * 
      * @param args
      *            [0] absolute directory name of classes directory
-     * @throws MalformedURLException 
+     * @throws IOException on various file problems 
      */
     public static void main(String[] args) throws IOException {
         System.exit(new Main(new File(args[0]), new File(args[1])).testPojos());

@@ -43,6 +43,10 @@ public class PojoClass {
         return OBJECT_MAPPER.convertValue(map, pojoClass);
     }
 
+    /**
+     * How many fields can be manipulated?
+     * @return The count of fields which can be changed.
+     */
     public int getVariationCount() {
         return Math.max(constructor.getParameterTypes().length, setters.size());
     }
@@ -50,7 +54,7 @@ public class PojoClass {
     /**
      * @param varientIdx -1 for all 'default' values
      * @return a filled pojo
-     * @throws Exception
+     * @throws Exception on failures
      */
     public Object createVariant(int varientIdx) throws Exception {
         Object o = constructor.newInstance(createArgs(varientIdx));

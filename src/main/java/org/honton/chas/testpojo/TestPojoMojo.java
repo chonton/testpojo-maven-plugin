@@ -14,8 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -57,7 +55,6 @@ public class TestPojoMojo extends AbstractMojo {
         argLine = replaceProperties(argLine);
 
         try {
-
             File jarFile = new File(buildDirectory, "testPojo.jar");
             new BuildExecJar(jarFile, Main.class.getCanonicalName())
                 .buildJar(getClassPath());
@@ -70,7 +67,7 @@ public class TestPojoMojo extends AbstractMojo {
             if (errors > 0) {
                 throw new MojoExecutionException(errors + " pojos had errors");
             }
-        } catch (ExecutionException | IOException | TimeoutException | URISyntaxException ex) {
+        } catch (Exception ex) {
             throw new MojoExecutionException(ex.getMessage(), ex);
         }
     }
