@@ -2,23 +2,22 @@ package org.honton.chas.testpojo;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.HashMap;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 
 import lombok.SneakyThrows;
 
 /**
- * Find Builder associated with @Data class
+ * Find PojoBuilder associated with @Data class
  */
-public class Builder {
+public class PojoBuilder {
 
     private Method publicStaticBuilderMethod;
     private Method publicBuildMethod;
     private Method publicToBuilderMethod;
     private Object builder;
 
-    public Builder(Class<?> dtoClass) {
+    public PojoBuilder(Class<?> dtoClass) {
         if (findBuilderMethod(dtoClass)) {
             findInstanceBuilder(dtoClass);
         }
@@ -49,16 +48,19 @@ public class Builder {
         }
     }
 
-    private static final Map<Class<?>, Class<?>> PRIMATIVE_TO_WRAPPER = ImmutableMap.<Class<?>, Class<?>> builder()
-            .put(Byte.TYPE, Byte.class)
-            .put(Short.TYPE, Short.class)
-            .put(Integer.TYPE, Integer.class)
-            .put(Long.TYPE, Long.class)
-            .put(Float.TYPE, Float.class)
-            .put(Double.TYPE, Double.class)
-            .put(Character.TYPE, Character.class)
-            .put(Boolean.TYPE, Boolean.class)
-            .build();
+    @SuppressWarnings("serial")
+    private static final Map<Class<?>, Class<?>> PRIMITIVE_TO_WRAPPER = new HashMap<Class<?>, Class<?>>() {
+        {
+            put(Byte.TYPE, Byte.class);
+            put(Short.TYPE, Short.class);
+            put(Integer.TYPE, Integer.class);
+            put(Long.TYPE, Long.class);
+            put(Float.TYPE, Float.class);
+            put(Double.TYPE, Double.class);
+            put(Character.TYPE, Character.class);
+            put(Boolean.TYPE, Boolean.class);
+        }
+    };
 
     private void invokeSetter(String name, Object value) {
         for (Method mth : builder.getClass().getDeclaredMethods()) {
@@ -70,9 +72,9 @@ public class Builder {
                     if(value==null) {
                         continue;
                     }
-                    parameterClass = PRIMATIVE_TO_WRAPPER.get(parameterClass);
+                    parameterClass = PRIMITIVE_TO_WRAPPER.get(parameterClass);
                 }
-                if (parameterClass.isAssignableFrom(value.getClass())) {
+                if (value == null || parameterClass.isAssignableFrom(value.getClass())) {
                     try {
                         mth.invoke(builder, value);
                         return;

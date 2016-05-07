@@ -1,10 +1,14 @@
 package org.honton.chas.testpojo;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -53,18 +57,14 @@ public class TestPojoMojo extends AbstractMojo {
         argLine = replaceProperties(argLine);
 
         try {
-            File jarFileLocation = new File(buildDirectory, "testPojo.jar");
-            Set<String> dependencies = new HashSet<>();
-            dependencies.addAll(runtimeScope);
-            dependencies.addAll(compileScope);
-            addMyDependencies(dependencies);
-            
-            new BuildExecJar(argLine, jarFileLocation, Main.class.getCanonicalName())
-                .buildJar(dependencies);
+
+            File jarFile = new File(buildDirectory, "testPojo.jar");
+            new BuildExecJar(jarFile, Main.class.getCanonicalName())
+                .buildJar(getClassPath());
 
             JavaProcess proc = new JavaProcess(getLog());
-            proc.setJavaArgs(Arrays.asList(argLine, "-jar", jarFileLocation.getAbsolutePath()));
-            proc.setCmdArgs(Arrays.asList(outputDirectory));
+            proc.setJavaArgs(Arrays.asList(argLine, "-jar", jarFile.getAbsolutePath()));
+            proc.setCmdArgs(Arrays.asList(outputDirectory, createDependencyFile()));
 
             int errors = proc.execute();
             if (errors > 0) {
@@ -75,11 +75,33 @@ public class TestPojoMojo extends AbstractMojo {
         }
     }
 
-    private void addMyDependencies(Set<String> dependencies) throws URISyntaxException {
+    private String createDependencyFile() throws IOException {
+        File dependencyFile = new File(buildDirectory, "testPojo.dependencies");
+        BufferedWriter dependencies = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dependencyFile), StandardCharsets.UTF_8));
+        try {
+            write(dependencies, runtimeScope);
+            write(dependencies, compileScope);
+        }
+        finally {
+            dependencies.close();
+        }
+        return dependencyFile.getAbsolutePath();
+    }
+
+    private static void write(BufferedWriter dependencies, List<String> dependencyScope) throws IOException {
+        for(String dependency : dependencyScope) {
+            dependencies.write(dependency);
+            dependencies.newLine();
+        }
+    }
+
+    private Set<String> getClassPath() throws URISyntaxException {
+        Set<String> classPath = new HashSet<>();
         URLClassLoader ucl = (URLClassLoader) getClass().getClassLoader();
         for(URL url : ucl.getURLs()) {
-            dependencies.add(url.toURI().getPath());
+            classPath.add(url.toURI().getPath());
         }
+        return classPath;
     }
 
     private final static Pattern ARG_PATTERN = Pattern.compile("@\\{([^}]+)\\}");

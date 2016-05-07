@@ -12,27 +12,28 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class BuildExecJar {
-    
-    private final String argLine;
     private final File jarLocation;
     private final String mainClass;
 
-    public final void buildJar(Set<String> dependencies) throws IOException {
+    public final void buildJar(Set<String> classPath) throws IOException {
+ 
+        Manifest manifest = new Manifest();
+        Attributes mainAttributes = manifest.getMainAttributes();
+        mainAttributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        mainAttributes.put(Attributes.Name.MAIN_CLASS, mainClass);
+        mainAttributes.put(Attributes.Name.CLASS_PATH,  createClassPath(classPath));
+        new JarOutputStream(new FileOutputStream(jarLocation), manifest).close();
+    }
+
+    private String createClassPath(Set<String> jars) {
         StringBuilder cp = new StringBuilder();
-        for(String dependency : dependencies) {
+        for(String dependency : jars) {
             cp.append(dependency);
             if(!dependency.endsWith(".jar")) {
                 cp.append('/');
             }
             cp.append(' ');
         }
- 
-        Manifest manifest = new Manifest();
-        Attributes mainAttributes = manifest.getMainAttributes();
-        mainAttributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        mainAttributes.put(Attributes.Name.MAIN_CLASS, mainClass);
-        mainAttributes.put(Attributes.Name.CLASS_PATH,  cp.toString());
-        mainAttributes.put(Attributes.Name.IMPLEMENTATION_TITLE, argLine);
-        new JarOutputStream(new FileOutputStream(jarLocation), manifest).close();
+        return cp.toString();
     }
 }

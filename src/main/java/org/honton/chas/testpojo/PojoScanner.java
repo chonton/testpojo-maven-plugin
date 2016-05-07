@@ -23,9 +23,8 @@ public class PojoScanner extends AbstractScanner {
     public void scan(Object cls) {
         @SuppressWarnings("rawtypes")
         MetadataAdapter meta = getConfiguration().getMetadataAdapter();
-        String className = meta.getClassName(cls);
         if (hasEqualsAndHashCode(meta, cls)) {
-            collector.add(className);
+            collector.add(meta.getClassName(cls));
         }
     }
 
@@ -35,19 +34,27 @@ public class PojoScanner extends AbstractScanner {
     private static <C, F, M> boolean hasEqualsAndHashCode(MetadataAdapter<C, F, M> meta, C cls) {
         boolean equals = false;
         boolean hashCode = false;
+        boolean publicConstructor = false;
         for (M method : meta.getMethods(cls)) {
             equals |= isMethod(meta, method, "boolean", "equals", SINGLE_OBJECT_ARG);
             hashCode |= isMethod(meta, method, "int", "hashCode", NO_ARGS);
-            if (equals && hashCode) {
+            publicConstructor |= isConstructor(meta, method, "int", "<init>", NO_ARGS);
+            if (equals && hashCode && publicConstructor) {
                 return true;
             }
         }
         return false;
     }
 
-    private static <C, F, M> boolean isMethod(MetadataAdapter<C, F, M> meta, M method, String returnType, String methodName,
+    private static <C, F, M> boolean isMethod(MetadataAdapter<C, F, M> meta, M method, 
+            String returnType, String methodName, List<String> parameterNames) {
+        return returnType.equals(meta.getReturnTypeName(method)) 
+                && methodName.equals(meta.getMethodName(method))
+                && parameterNames.equals(meta.getParameterNames(method));
+    }
+
+    private static <C, F, M> boolean isConstructor(MetadataAdapter<C, F, M> meta, M method, String returnType, String methodName,
             List<String> parameterNames) {
-        return meta.getReturnTypeName(method).equals(returnType) && meta.getMethodName(method).equals(methodName)
-                && meta.getParameterNames(method).equals(parameterNames);
+        return "<init>".equals(meta.getMethodName(method)) && meta.isPublic(method);
     }
 }

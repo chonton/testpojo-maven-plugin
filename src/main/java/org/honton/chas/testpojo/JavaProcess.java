@@ -15,7 +15,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 
 import org.apache.maven.plugin.logging.Log;
 
@@ -54,14 +53,20 @@ public class JavaProcess {
         final Process process = startProcess();
         try {
             closeOutputStream(process.getOutputStream());
-            Future<IOException> stderrFuture = startStreamPump(process.getErrorStream(), (line) -> {
-                synchronized (log) {
-                    log.error(line);
+            Future<IOException> stderrFuture = startStreamPump(process.getErrorStream(), new Consumer<String>(){
+                @Override
+                public void accept(String line) {
+                    synchronized (log) {
+                        log.error(line);
+                    }
                 }
             });
-            Future<IOException> stdoutFuture = startStreamPump(process.getInputStream(), (line) -> {
-                synchronized (log) {
-                    log.info(line);
+            Future<IOException> stdoutFuture = startStreamPump(process.getInputStream(), new Consumer<String>(){
+                @Override
+                public void accept(String line) {
+                    synchronized (log) {
+                        log.info(line);
+                    }
                 }
             });
 
@@ -121,8 +126,12 @@ public class JavaProcess {
 
         return Runtime.getRuntime().exec(allArgs.toArray(new String[allArgs.size()]));
     }
+    
+    private interface Consumer<T> {
+        void accept(T t);
+    }
 
-    private Future<IOException> startStreamPump(final InputStream errorStream, Consumer<String> logLine) {
+    private Future<IOException> startStreamPump(final InputStream errorStream, final Consumer<String> logLine) {
         return executor.submit(new Callable<IOException>() {
             @Override
             public IOException call() {
