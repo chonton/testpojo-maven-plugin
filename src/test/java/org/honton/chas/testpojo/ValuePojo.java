@@ -9,7 +9,8 @@ import lombok.Value;
 public class ValuePojo {
     private final String s;
     private final int i;
-    private DataPojo p;
-    private HashMap<String,String> hm;
-    private Collection<String> cs;
+    private final Long l;
+    private final DataPojo p;
+    private final HashMap<String,String> hm;
+    private final Collection<String> cs;
 }

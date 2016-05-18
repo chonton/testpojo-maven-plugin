@@ -1,28 +1,20 @@
 package org.honton.chas.testpojo;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+
+import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * test pojo setters, getters, equals, hashCode
@@ -47,12 +39,16 @@ public class TestPojoMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
+        if(!new File(buildDirectory).isDirectory()) {
+            getLog().debug("No classes, skipping");
+            return;
+        }
         String argLine = properties.get("argLine");
         if (argLine == null) {
             getLog().warn("No argLine specifying javaagent - not continuing");
             return;
         }
-        argLine = replaceProperties(argLine);
+        List<String> arguments = replaceProperties(argLine);
 
         try {
             File jarFile = new File(buildDirectory, "testPojo.jar");
@@ -60,14 +56,19 @@ public class TestPojoMojo extends AbstractMojo {
                 .buildJar(getClassPath());
 
             JavaProcess proc = new JavaProcess(getLog());
-            proc.setJavaArgs(Arrays.asList(argLine, "-jar", jarFile.getAbsolutePath()));
+            arguments.add("-jar");
+            arguments.add(jarFile.getAbsolutePath());
+            proc.setJavaArgs(arguments);
             proc.setCmdArgs(Arrays.asList(outputDirectory, createDependencyFile()));
 
             int errors = proc.execute();
             if (errors > 0) {
                 throw new MojoExecutionException(errors + " pojos had errors");
             }
-        } catch (Exception ex) {
+        } catch (MojoExecutionException ex) {
+            throw ex;
+        }
+        catch(Exception ex) {
             throw new MojoExecutionException(ex.getMessage(), ex);
         }
     }
@@ -103,7 +104,18 @@ public class TestPojoMojo extends AbstractMojo {
 
     private final static Pattern ARG_PATTERN = Pattern.compile("@\\{([^}]+)\\}");
 
-    private String replaceProperties(String argLine) {
+    private List<String> replaceProperties(String argLine) {
+        List<String> params = new ArrayList<>();
+        for (String param : argLine.split(" ")) {
+            String property = replaceProperty(param);
+            if (!property.isEmpty()) {
+                params.add(property);
+            }
+        }
+        return params;
+    }
+
+    private String replaceProperty(String argLine) {
         StringBuilder sb = new StringBuilder();
         int start = 0;
         for (Matcher m = ARG_PATTERN.matcher(argLine); m.find();) {

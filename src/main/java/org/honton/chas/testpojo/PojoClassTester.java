@@ -1,11 +1,13 @@
 package org.honton.chas.testpojo;
 
+import java.io.IOException;
+
 public class PojoClassTester {
 
     private final PojoClass pojoClass;
 
-    PojoClassTester(ClassLoader pojoClassLoader, String pojoClassName) throws ClassNotFoundException {
-        pojoClass = new PojoClass(pojoClassLoader, pojoClassName);
+    PojoClassTester(ClassLoader pojoClassLoader, String pojoClassName) throws Exception {
+        pojoClass = PojoClass.from(pojoClassLoader, pojoClassName);
     }
 
     public boolean test() throws Exception {
@@ -63,16 +65,22 @@ public class PojoClassTester {
     private Object createVariant(int variantIdx) throws Exception {
         Object variant = pojoClass.createVariant(variantIdx);
         variant.toString();
-        return testPojoToMapToPojo(variant) && testPojoToBuilderToPojo(variant) ? variant : null;
+
+        if(!testJacksonSerialization(variant)) {
+            return null;
+        }
+
+        Object copy = pojoClass.createCopyThroughBuilder(variant);
+        if (copy != null && !comparePojos(variant, copy)) {
+            return null;
+        }
+        return variant;
     }
 
-    private boolean testPojoToBuilderToPojo(Object pojo) {
-        Object copy = pojoClass.createCopyThroughBuilder(pojo);
-        return copy == null || comparePojos(pojo, copy);
-    }
-
-    private boolean testPojoToMapToPojo(Object pojo) {
-        return comparePojos(pojo, pojoClass.createCopyThroughMap(pojo));
+    private boolean testJacksonSerialization(Object variant) throws IOException {
+        return !pojoClass.isJacksonSerializable()
+            || (comparePojos(variant, pojoClass.createCopyThroughMap(variant))
+            && comparePojos(variant, pojoClass.createCopyThroughString(variant)));
     }
 
     private boolean comparePojos(Object pojo, Object copy) {

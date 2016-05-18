@@ -126,6 +126,7 @@ public class JavaProcess {
             allArgs.addAll(cmdArgs);
         }
 
+        log.debug("starting process: "+ allArgs);
         return Runtime.getRuntime().exec(allArgs.toArray(new String[allArgs.size()]));
     }
     
