@@ -23,7 +23,7 @@ public class PojoScanner extends AbstractScanner {
     public void scan(Object cls) {
         @SuppressWarnings("rawtypes")
         MetadataAdapter meta = getConfiguration().getMetadataAdapter();
-        if (hasEqualsAndHashCode(meta, cls)) {
+        if (meta.isPublic(cls) && hasEqualsAndHashCode(meta, cls)) {
             collector.add(meta.getClassName(cls));
         }
     }
