@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.collect.ImmutableList;
 
 import java.io.IOException;
@@ -18,7 +19,8 @@ public class PojoClass {
         new TypeReference<Map<String, Object>>() {};
 
     static private final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-        .registerModule(new GuavaModule());
+        .registerModule(new GuavaModule())
+        .registerModule(new JodaModule());
 
     @SuppressWarnings("serial")
     private static final Map<Class<?>, Object> STANDARD_VALUES = new HashMap<Class<?>, Object>() {
