@@ -13,4 +13,8 @@ public class ValuePojo {
     private final DataPojo p;
     private final HashMap<String,String> hm;
     private final Collection<String> cs;
+    private final NoValues nv;
+
+    public enum NoValues {
+    }
 }

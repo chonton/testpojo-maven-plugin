@@ -66,7 +66,7 @@ public class PojoBuilder {
         for (Method mth : builder.getClass().getDeclaredMethods()) {
             if (!Modifier.isStatic(mth.getModifiers())
                     && mth.getName().equals(name) 
-                    && mth.getParameterTypes().length == 1) {
+                    && mth.getParameterCount() == 1) {
                 Class<?> parameterClass = mth.getParameterTypes()[0];
                 if (parameterClass.isPrimitive()) {
                     if(value==null) {
@@ -90,6 +90,7 @@ public class PojoBuilder {
         for (Method method : dtoClass.getDeclaredMethods()) {
             if (Modifier.isStatic(method.getModifiers()) 
                     && Modifier.isPublic(method.getModifiers())
+                    && method.getParameterCount() == 0
                     && findBuildMethod(dtoClass, method.getReturnType())) {
                 this.publicStaticBuilderMethod = method;
                 return true;
@@ -101,7 +102,6 @@ public class PojoBuilder {
     private boolean findBuildMethod(Class<?> dtoClass, Class<?> builderClass) {
         for (Method method : builderClass.getDeclaredMethods()) {
             if (method.getReturnType().equals(dtoClass) 
-                    && method.getParameterTypes().length == 0
                     && !Modifier.isStatic(method.getModifiers()) 
                     && Modifier.isPublic(method.getModifiers())) {
                 this.publicBuildMethod = method;
@@ -115,7 +115,8 @@ public class PojoBuilder {
         try {
             Method method = dtoClass.getDeclaredMethod("toBuilder");
             if (Modifier.isPublic(method.getModifiers()) 
-                    && !Modifier.isStatic(method.getModifiers())) {
+                    && !Modifier.isStatic(method.getModifiers())
+                    && method.getParameterCount() == 0) {
                 this.publicToBuilderMethod = method;
             }
         } catch (NoSuchMethodException e) {

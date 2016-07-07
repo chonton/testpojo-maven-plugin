@@ -4,25 +4,31 @@ import java.io.IOException;
 
 public class PojoClassTester {
 
+    static ClassLoader classLoader;
+
+    public static void setClassLoader(ClassLoader classLoader) {
+        PojoClassTester.classLoader = classLoader;
+    }
+
     private final PojoClass pojoClass;
 
-    PojoClassTester(ClassLoader pojoClassLoader, String pojoClassName) throws Exception {
-        pojoClass = PojoClass.from(pojoClassLoader, pojoClassName);
+    PojoClassTester(String pojoClassName) throws Exception {
+        pojoClass = PojoClass.from(classLoader.loadClass(pojoClassName));
     }
 
     public boolean test() throws Exception {
-        if (!pojoClass.isTestable()) {
+        if (!pojoClass.isConstructable()) {
             return true;
         }
 
         final Object standard = createVariant(-1);
-        if(standard==null) {
+        if (standard == null) {
             return false;
         }
 
         final int variantCount = pojoClass.getVariationCount();
-        if(variantCount>0) {
-            if(!testVariationInEquality(standard, variantCount)) {
+        if (variantCount > 0) {
+            if (!testVariationInEquality(standard, variantCount)) {
                 return false;
             }
         }
@@ -44,19 +50,22 @@ public class PojoClassTester {
 
     private boolean testVariationInEquality(Object standard, int variantCount) throws Exception {
         Object prior = standard;
-        for(int i = 0; i<variantCount; ++i) {
+        for (int i = 0; i < variantCount; ++i) {
             Object variant = createVariant(i);
-            if(variant==null || equal(prior, variant)) {
+            if (variant == null) {
+                continue;
+            }
+            if (areEqual(prior, variant)) {
                 return false;
             }
             prior = variant;
         }
-        return !equal(prior, standard);
+        return prior==standard || !areEqual(prior, standard);
     }
 
-    private static boolean equal(Object prior, Object variant) {
+    private static boolean areEqual(Object prior, Object variant) {
         boolean equal = variant.equals(prior);
-        if(equal){
+        if (equal) {
             System.err.println(variant + " == " + prior);
         }
         return equal;
@@ -64,9 +73,12 @@ public class PojoClassTester {
 
     private Object createVariant(int variantIdx) throws Exception {
         Object variant = pojoClass.createVariant(variantIdx);
+        if(variant == null) {
+            return null;
+        }
         variant.toString();
 
-        if(!testJacksonSerialization(variant)) {
+        if (!testJacksonSerialization(variant)) {
             return null;
         }
 
@@ -79,8 +91,8 @@ public class PojoClassTester {
 
     private boolean testJacksonSerialization(Object variant) throws IOException {
         return !pojoClass.isJacksonSerializable()
-            || (comparePojos(variant, pojoClass.createCopyThroughMap(variant))
-            && comparePojos(variant, pojoClass.createCopyThroughString(variant)));
+                || (comparePojos(variant, pojoClass.createCopyThroughMap(variant))
+                        && comparePojos(variant, pojoClass.createCopyThroughString(variant)));
     }
 
     private boolean comparePojos(Object pojo, Object copy) {
@@ -93,7 +105,7 @@ public class PojoClassTester {
             return false;
         }
         if (pojo.hashCode() != copy.hashCode()) {
-            System.err.println(pojo.hashCode() + " != " + copy.hashCode());
+            System.err.println("hashCode " +pojo.hashCode() + " != " + copy.hashCode());
             return false;
         }
         return true;

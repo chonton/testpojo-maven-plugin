@@ -36,11 +36,11 @@ public class Main {
     private final File dependencies;
 
     public int testPojos() throws IOException {
-        ClassLoader pojoClassLoader = getDependencies();
+        PojoClassTester.setClassLoader(getDependencies());
         int errors = 0;
         for (String pojoName : getPojoNames()) {
             try {
-                new PojoClassTester(pojoClassLoader, pojoName).test();
+                new PojoClassTester(pojoName).test();
             } catch (Throwable ex) {
                 ex.printStackTrace();
                 ++errors;
