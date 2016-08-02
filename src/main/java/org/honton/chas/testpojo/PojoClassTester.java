@@ -12,7 +12,7 @@ public class PojoClassTester {
 
     private final PojoClass pojoClass;
 
-    PojoClassTester(String pojoClassName) throws Exception {
+    public PojoClassTester(String pojoClassName) throws Exception {
         pojoClass = PojoClass.from(classLoader.loadClass(pojoClassName));
     }
 

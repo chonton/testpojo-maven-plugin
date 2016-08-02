@@ -45,6 +45,7 @@ public class PojoClass {
             .registerModule(new JodaModule())
             .disable(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE)
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
             .enable(SerializationFeature.WRITE_DATES_WITH_ZONE_ID);
 
     @SuppressWarnings("serial")
@@ -111,14 +112,13 @@ public class PojoClass {
         constructor = findConstructor();
         cache.put(pojoClass, this);
 
-        if (constructor == null) {
-            System.out.println("No public constructor for " + pojoClass.getCanonicalName());
-        } else {
+        if (constructor != null) {
+            constructor.setAccessible(true);
             findSetters();
         }
     }
 
-    static PojoClass from(Class<?> pojoClass) {
+    static public PojoClass from(Class<?> pojoClass) {
         PojoClass pc = cache.get(pojoClass);
         return pc == null ? new PojoClass(pojoClass) : pc;
     }
@@ -250,6 +250,11 @@ public class PojoClass {
 
     private Constructor<?> findConstructor() {
         if (Modifier.isAbstract(pojoClass.getModifiers())) {
+            System.out.println("Abstract class " + pojoClass.getCanonicalName());
+            return null;
+        }
+        if (pojoClass.isMemberClass() && !Modifier.isStatic(pojoClass.getModifiers())) {
+            System.out.println("Non-static inner class " + pojoClass.getCanonicalName());
             return null;
         }
         int leastNArgs = Integer.MAX_VALUE;
@@ -264,6 +269,9 @@ public class PojoClass {
                     leastArgs = constructor;
                 }
             }
+        }
+        if (leastArgs == null) {
+            System.out.println("No public constructor for " + pojoClass.getCanonicalName());
         }
         return leastArgs;
     }
