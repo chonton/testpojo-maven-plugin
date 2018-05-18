@@ -42,7 +42,6 @@ public class Main {
             try {
                 new PojoClassTester(pojoName).test();
             } catch (Throwable ex) {
-                ex.printStackTrace();
                 ++errors;
                 System.err.println(pojoName + ": " + ex.getMessage());
                 ex.printStackTrace(System.err);

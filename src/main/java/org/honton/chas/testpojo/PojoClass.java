@@ -1,5 +1,14 @@
 package org.honton.chas.testpojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -23,16 +32,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.collect.ImmutableList;
 
 public class PojoClass {
 
@@ -279,9 +278,10 @@ public class PojoClass {
     private void findSetters() {
         for (Method method : pojoClass.getDeclaredMethods()) {
             if (Modifier.isPublic(method.getModifiers())
-                    && Void.TYPE.equals(method.getReturnType())
                     && 1 == method.getParameterCount()
-                    && method.getName().startsWith("set")) {
+                    && method.getName().startsWith("set")
+                    && (Void.TYPE.equals(method.getReturnType())
+                        || method.getReturnType().isAssignableFrom(pojoClass))) {
                 setters.add(method);
             }
         }

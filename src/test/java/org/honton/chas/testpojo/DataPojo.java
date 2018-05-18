@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.joda.time.DateTime;
 
 import com.google.common.collect.ImmutableList;
@@ -18,6 +20,7 @@ import lombok.Data;
 public class DataPojo {
     static public String ignoreThis;
 
+    @Accessors(chain = true)
     private String s;
     private int i;
     private ValuePojo p;

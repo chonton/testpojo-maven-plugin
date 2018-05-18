@@ -1,7 +1,10 @@
 # testpojo-maven-plugin
 Test pojos using maven plugin instead of boilerplate.  Just as [lombok](https://projectlombok.org/) can reduce writing bolierplate for POJOs, this plugin can reduce the unit tests you need to write.
 
-## Use with Maven
+## Requirements
+This plugin is designed to used with [jacoco maven plugin](https://www.eclemma.org/jacoco/trunk/doc/maven.html).
+
+## Maven Configuration
 To include testpojo-maven-plugin in your maven build, use the following fragment in your pom.
 ``` xml
   <build>
@@ -9,7 +12,7 @@ To include testpojo-maven-plugin in your maven build, use the following fragment
       <plugin>
         <groupId>org.honton.chas</groupId>
         <artifactId>testpojo-maven-plugin</artifactId>
-        <version>0.0.5</version>
+        <version>0.0.6</version>
         <executions>
           <execution>
             <id>test-pojos</id>
