@@ -101,11 +101,11 @@ public class PojoClassTester {
             return false;
         }
         if (!pojo.equals(copy)) {
-            System.err.println(pojo + " != " + copy);
+            System.err.println("jackson copy should be equal to original; original: " + pojo + ", copy: " + copy);
             return false;
         }
         if (pojo.hashCode() != copy.hashCode()) {
-            System.err.println("hashCode " +pojo.hashCode() + " != " + copy.hashCode());
+            System.err.println("jackson copy should produce same hashCode as original;  original: " +pojo.hashCode() + ", copy: " + copy.hashCode());
             return false;
         }
         return true;

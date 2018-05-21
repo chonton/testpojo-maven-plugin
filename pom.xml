@@ -4,7 +4,7 @@
 
   <groupId>org.honton.chas</groupId>
   <artifactId>testpojo-maven-plugin</artifactId>
-  <version>0.0.6</version>
+  <version>0.0.7</version>
   <packaging>maven-plugin</packaging>
 
   <name>Test Pojos Maven Plugin</name>
