@@ -101,14 +101,16 @@ public class TestPojoMojo extends AbstractMojo {
         return classPath;
     }
 
-    private final static Pattern ARG_PATTERN = Pattern.compile("@\\{([^}]+)\\}");
+    private static final Pattern ARG_PATTERN = Pattern.compile("@\\{([^}]+)\\}");
 
     private List<String> replaceProperties(String argLine) {
         List<String> params = new ArrayList<>();
-        for (String param : argLine.split(" ")) {
-            String property = replaceProperty(param);
-            if (!property.isEmpty()) {
-                params.add(property);
+        if (argLine != null) {
+            for (String param : argLine.split(" ")) {
+                String property = replaceProperty(param);
+                if (!property.isEmpty()) {
+                    params.add(property);
+                }
             }
         }
         return params;
@@ -120,7 +122,7 @@ public class TestPojoMojo extends AbstractMojo {
         for (Matcher m = ARG_PATTERN.matcher(argLine); m.find();) {
             String value = properties.get(m.group(1));
             if (value != null) {
-                sb.append(argLine.substring(start, m.start()));
+                sb.append(argLine, start, m.start());
                 sb.append(value);
                 start = m.end();
             }
