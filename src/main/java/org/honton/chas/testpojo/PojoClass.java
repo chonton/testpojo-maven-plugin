@@ -9,29 +9,13 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableList;
+
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.MonthDay;
-import java.time.OffsetDateTime;
-import java.time.OffsetTime;
-import java.time.Period;
-import java.time.Year;
-import java.time.YearMonth;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.*;
+import java.util.*;
 
 public class PojoClass {
 
@@ -147,32 +131,40 @@ public class PojoClass {
         return constructor != null;
     }
 
-    public boolean isJacksonSerializable() {
-        return pojoClass.getAnnotation(JsonIgnoreType.class) == null;
+    public static boolean isJacksonSerializable(Object value) {
+        try {
+            return value.getClass().getAnnotation(JsonIgnoreType.class) == null
+                    && createCopyThroughString(value) != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
-    public Object createCopyThroughMap(Object pojo) {
+    public static Object createCopyThroughMap(Object pojo) {
         Map<String, Object> map = OBJECT_MAPPER.convertValue(pojo, MAP_STRING_TO_OBJECT_TYPE);
-        return OBJECT_MAPPER.convertValue(map, pojoClass);
+        return OBJECT_MAPPER.convertValue(map, pojo.getClass());
     }
 
-    public Object createCopyThroughString(Object pojo) throws IOException {
+    public static Object createCopyThroughString(Object pojo) throws IOException {
         String json = OBJECT_MAPPER.writeValueAsString(pojo);
-        return OBJECT_MAPPER.readValue(json, pojoClass);
+        return OBJECT_MAPPER.readValue(json, pojo.getClass());
     }
 
     /**
      * How many fields can be manipulated?
-     * 
+     *
      * @return The count of fields which can be changed.
      */
     public int getVariationCount() {
         return Math.max(constructor.getParameterCount(), setters.size());
     }
 
+    public String getPojoClassSimpleName() {
+        return pojoClass.getSimpleName();
+    }
+
     /**
-     * @param variantIdx
-     *            -1 for all 'default' values
+     * @param variantIdx -1 for all 'default' values
      * @return a filled pojo, or null on failures
      * @throws Exception
      */

@@ -1,6 +1,7 @@
 package org.honton.chas.testpojo;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class PojoClassTester {
 
@@ -33,6 +34,16 @@ public class PojoClassTester {
             }
         }
 
+        if (standard.hashCode() != standard.hashCode()) {
+            System.err.println("hashCode is unstable");
+            return false;
+        }
+
+        if (!Objects.equals(standard.toString(), String.valueOf(standard))) {
+            System.err.println("toString is unstable");
+            return false;
+        }
+
         if (!standard.equals(standard)) {
             System.err.println("this !== this");
             return false;
@@ -45,6 +56,7 @@ public class PojoClassTester {
             System.err.println("this == new Object()");
             return false;
         }
+
         return true;
     }
 
@@ -76,9 +88,10 @@ public class PojoClassTester {
         if(variant == null) {
             return null;
         }
-        variant.toString();
 
-        if (!testJacksonSerialization(variant)) {
+        if (!PojoClass.isJacksonSerializable(variant)) {
+            System.err.println("Skipping '" + pojoClass.getPojoClassSimpleName() + "' serialization tests!");
+        } else if (!testJacksonSerialization(variant)) {
             return null;
         }
 
@@ -90,9 +103,8 @@ public class PojoClassTester {
     }
 
     private boolean testJacksonSerialization(Object variant) throws IOException {
-        return !pojoClass.isJacksonSerializable()
-                || (comparePojos(variant, pojoClass.createCopyThroughMap(variant))
-                        && comparePojos(variant, pojoClass.createCopyThroughString(variant)));
+        return comparePojos(variant, PojoClass.createCopyThroughMap(variant))
+                && comparePojos(variant, PojoClass.createCopyThroughString(variant));
     }
 
     private boolean comparePojos(Object pojo, Object copy) {
