@@ -1,18 +1,20 @@
 package org.honton.chas.testpojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import lombok.Data;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-
-import lombok.Data;
-
 public class NotSerializableTest {
-
     @JsonIgnoreType
+    public static class JsonIgnoreTypeClass {
+    }
+
     @Data
-    static public class NotSerializable {
+    public static class NotSerializable {
+        public NotSerializable(Void param) {
+        }
     }
     
     @Before
@@ -22,9 +24,17 @@ public class NotSerializableTest {
     
     @Test
     public void testNotSerializable() throws Exception {
-        PojoClass pc = PojoClass.from(NotSerializable.class);
-        Assert.assertFalse(pc.isJacksonSerializable());
+        Object value = PojoClass.from(NotSerializable.class).createVariant(-1);
+        Assert.assertFalse(PojoClass.isJacksonSerializable(value));
 
         Assert.assertTrue(new PojoClassTester(NotSerializable.class.getName()).test());
+    }
+
+    @Test
+    public void testJsonIgnoreTypeClass() throws Exception {
+        Object value = PojoClass.from(JsonIgnoreTypeClass.class).createVariant(-1);
+        Assert.assertFalse(PojoClass.isJacksonSerializable(value));
+
+        Assert.assertTrue(new PojoClassTester(JsonIgnoreTypeClass.class.getName()).test());
     }
 }
