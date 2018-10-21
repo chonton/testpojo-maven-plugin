@@ -4,7 +4,7 @@
 
   <groupId>org.honton.chas</groupId>
   <artifactId>testpojo-maven-plugin</artifactId>
-  <version>0.0.7</version>
+  <version>0.0.8</version>
   <packaging>maven-plugin</packaging>
 
   <name>Test Pojos Maven Plugin</name>
@@ -50,7 +50,7 @@
   </distributionManagement>
 
   <properties>
-    <jackson.version>2.8.0</jackson.version>
+    <jackson.version>2.9.7</jackson.version>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
