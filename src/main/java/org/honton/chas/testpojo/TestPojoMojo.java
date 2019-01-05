@@ -37,8 +37,20 @@ public class TestPojoMojo extends AbstractMojo {
     @Parameter(property = "project.model.properties", readonly = true)
     private Map<String, String> properties;
 
+    /**
+     * Skip executing this plugin
+     *
+     * @since 0.0.9
+     */
+    @Parameter(defaultValue = "${skipTests}", property = "testpojo.skip")
+    private boolean skip;
+
     @Override
     public void execute() throws MojoExecutionException {
+        if(skip) {
+            getLog().info("skipping testpojo execution");
+            return;
+        }
         if(!new File(buildDirectory).isDirectory()) {
             getLog().info("No classes, skipping");
             return;
@@ -73,6 +85,7 @@ public class TestPojoMojo extends AbstractMojo {
     }
 
     private String createDependencyFile() throws IOException {
+        // This temporary file makes the plugin not thread-safe
         File dependencyFile = new File(buildDirectory, "testPojo.dependencies");
         BufferedWriter dependencies = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(dependencyFile), StandardCharsets.UTF_8));
         try {

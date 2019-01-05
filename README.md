@@ -12,7 +12,7 @@ To include testpojo-maven-plugin in your maven build, use the following fragment
       <plugin>
         <groupId>org.honton.chas</groupId>
         <artifactId>testpojo-maven-plugin</artifactId>
-        <version>0.0.6</version>
+        <version>0.0.9</version>
         <executions>
           <execution>
             <id>test-pojos</id>
@@ -38,6 +38,10 @@ testpojo-maven-plugin provides a single 'test' goal which defaults to running in
 
 ## How testpojo-maven-plugin works
 Using [Reflections](https://github.com/ronmamo/reflections), all code in the ${build.outputDirectory} is introspected.  Any class with method implementations for both equals and hashCode and has a public constructor is considered a bean.
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+|testpojo.skip |${skipTests}| Skip testing pojos |
 
 ### Bean test consists of the following steps.
 1. Construct bean with public constructor having least number of arguments.
